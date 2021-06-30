@@ -16,7 +16,7 @@ import re
 import configparser as cp
 
 #write your letter in letter.txt
-with open('letter.txt', 'r') as infile:
+with open('letter.txt', 'r',encoding='utf-8') as infile:
     text = infile.read()
 
 #choose the receiver list
@@ -50,7 +50,7 @@ def disconnect(server):
 
 def read_list(file_name):
     obj = list()
-    with open(file_name,'r') as f:
+    with open(file_name,'r',encoding='utf-8') as f:
         for line in f:
             t = line.split()
             if t is not None:
@@ -74,7 +74,7 @@ for recipient in recipients:
         print('{} mails sent, resting...'.format(count))
         time.sleep(10)  #for mail server limitation
     msg = MIMEMultipart()
-    msg['Subject'] = "【主旨】"
+    msg['Subject'] = "【主旨】"#remember to change
     msg['From'] = sender
     msg.preamble = 'Multipart massage.\n'
     #letter content
