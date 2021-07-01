@@ -3,7 +3,8 @@
 # Purpose:      Automatic send 專題說明會 invitation mails to professors   #
 # Last changed: 2015/06/21                                               #
 # Author:       Yi-Lin Juang (B02 學術長)                                 #
-# Edited:       2021/07/01 Eleson Chuang (B08 學術長)                     #
+# Edited:       2021/07/01 Eleson Chuang (B08 Python大佬)                 #
+#               2018/05/22 Joey Wang (B05 學術長)                         #
 # Copyleft:     (ɔ)NTUEE                                                 #
 ##########################################################################
 import smtplib
