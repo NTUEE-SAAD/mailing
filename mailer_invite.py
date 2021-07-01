@@ -1,9 +1,9 @@
 ##########################################################################
 # File:         mailer_invite.py                                         #
-# Purpose:      Automatic send 專題說明會 invitation mails to professors #
+# Purpose:      Automatic send 專題說明會 invitation mails to professors   #
 # Last changed: 2015/06/21                                               #
-# Author:       Yi-Lin Juang (B02 學術長)                                #
-# Edited:       2018/05/22 Joey Wang (B05 學術長)                        #
+# Author:       Yi-Lin Juang (B02 學術長)                                 #
+# Edited:       2021/07/01 Eleson Chuang (B08 學術長)                     #
 # Copyleft:     (ɔ)NTUEE                                                 #
 ##########################################################################
 import smtplib
@@ -34,7 +34,10 @@ except:
 
 def connectSMTP():
     # Send the message via NTU SMTP server.
-    s = smtplib.SMTP('mail.ntu.edu.tw', 587)
+    #For students ID larger than 09 
+    s = smtplib.SMTP_SSL('smtps.ntu.edu.tw', 465)
+    #For students ID smaller than 08 i.e. elders
+    #s = smtplib.SMTP('mail.ntu.edu.tw', 587)
     s.set_debuglevel(False)
     #Uncomment this line to go through SMTP connection status.
     s.ehlo()
@@ -74,7 +77,7 @@ for recipient in recipients:
         print('{} mails sent, resting...'.format(count))
         time.sleep(10)  #for mail server limitation
     msg = MIMEMultipart()
-    msg['Subject'] = "【主旨】"#remember to change
+    msg['Subject'] = "【主旨haha】"#remember to change
     msg['From'] = sender
     msg.preamble = 'Multipart massage.\n'
     #letter content
