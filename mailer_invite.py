@@ -11,38 +11,43 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
 from email.mime.text import MIMEText
+from email.header import Header
+from email.utils import formataddr
+from email.mime.image import MIMEImage
 import sys
 import time
 import re
 import configparser as cp
+import os
+import os.path
 
-#write your letter in letter.txt
-with open('letter.txt', 'r',encoding='utf-8') as infile:
+# write your letter in letter.txt
+with open("letter.txt", "r", encoding="utf-8") as infile:
     text = infile.read()
 
-#choose the receiver list
-email_list = 'test_list'
+# choose the receiver list
+email_list = "test_list"
 
-#load email account info
+# load email account info
 config = cp.ConfigParser()
-config.read('account.ini')  #reading sender account information
+config.read("account.ini")  # reading sender account information
 try:
-    user = config['ACCOUNT']['user']
-    pw = config['ACCOUNT']['pw']
+    user = config["ACCOUNT"]["user"]
+    pw = config["ACCOUNT"]["pw"]
 except:
-    print('Reading config file fail!\nPlease check the config file...')
+    print("Reading config file fail!\nPlease check the config file...")
     exit()
 
 def connectSMTP():
     # Send the message via NTU SMTP server.
-    #For students ID larger than 09 
-    s = smtplib.SMTP_SSL('smtps.ntu.edu.tw', 465)
-    #For students ID smaller than 08 i.e. elders
-    #s = smtplib.SMTP('mail.ntu.edu.tw', 587)
+    # For students ID larger than 09
+    s = smtplib.SMTP_SSL("smtps.ntu.edu.tw", 465)
+    # For students ID smaller than 08 i.e. elders
+    # s = smtplib.SMTP('mail.ntu.edu.tw', 587)
     s.set_debuglevel(False)
-    #Uncomment this line to go through SMTP connection status.
+    # Uncomment this line to go through SMTP connection status.
     s.ehlo()
-    if s.has_extn('STARTTLS'):
+    if s.has_extn("STARTTLS"):
         s.starttls()
         s.ehlo()
     s.login(user, pw)
@@ -54,7 +59,7 @@ def disconnect(server):
 
 def read_list(file_name):
     obj = list()
-    with open(file_name,'r',encoding='utf-8') as f:
+    with open(file_name, "r", encoding="utf-8") as f:
         for line in f:
             t = line.split()
             if t is not None:
@@ -62,40 +67,75 @@ def read_list(file_name):
     return obj
 
 def send_mail(msg, server):
-    server.sendmail(msg['From'], msg['To'] , msg.as_string())
-    print("Sent message from {} to {}".format(msg['From'], msg['To']))
+    server.sendmail(msg["From"], msg["To"], msg.as_string())
+    print("Sent message from {} to {}".format(msg["From"], msg["To"]))
+
+def attach_files_METHOD1(msg):
+    '''This method will attach all the files in the ./attach folder.'''
+    dir_path = os.getcwd()+"/attach"
+    files = os.listdir("attach")
+    for f in files:  # add files to the message
+        file_path = os.path.join(dir_path, f)
+        attachment = MIMEApplication(open(file_path, "rb").read())
+        attachment.add_header('Content-Disposition', 'inline', filename=f)
+        msg.attach(attachment)
+
+def attach_files_METHOD2(msg):
+    '''Reading attachment, put file_path in args'''
+    for argvs in sys.argv[1:]:
+        attachment = MIMEApplication(open(str(argvs), "rb").read())
+        attachment.add_header("Content-Disposition", "attachment", filename=str(argvs))
+        msg.attach(attachment)
+
 
 # recipient  = recipient's email address
 sender = "{}@ntu.edu.tw".format(user)
 # 2. Sender email address (yours).
-recipients = read_list(email_list)       
+recipients = read_list(email_list)
 ## Uncomment this line to send to yourself. (for TESTING)
 server = connectSMTP()
 count = 0
 
 for recipient in recipients:
     if count % 10 == 0 and count > 0:
-        print('{} mails sent, resting...'.format(count))
-        time.sleep(10)  #for mail server limitation
+        print("{} mails sent, resting...".format(count))
+        time.sleep(10)  # for mail server limitation
+    if count % 130 == 0 and count > 0:
+        print("{} mails sent, resting...".format(count))
+        time.sleep(20)  # for mail server limitation
+    if count % 260 == 0 and count > 0:
+        print("{} mails sent, resting...".format(count))
+        time.sleep(20)  # for mail server limitation
     msg = MIMEMultipart()
-    msg['Subject'] = "【主旨haha】"#remember to change
-    msg['From'] = sender
-    msg.preamble = 'Multipart massage.\n'
-    #letter content
-    part =  MIMEText("{}教授您好：\n\n{}".format(recipient[0][0],text))
+    msg["From"] = sender
+    # msg['From'] = Header("台大電機系學會學術部", "utf-8")
+    # might cause the emails be classified as spams
+
+    # remember to change!
+    msg["Subject"] = "E沒有 阻止"
+    msg.preamble = "Multipart massage.\n"
+
+
+    # letter content
+    part = MIMEText("{}同學您好：\n\n{}".format(recipient[0], text))
     msg.attach(part)
-    #Reading attachment, put file_path in args
-    if len(sys.argv) > 1:
-        part = MIMEApplication(open(str(sys.argv[1]),"rb").read())
-        if len(sys.argv) > 2:
-            attachname = str(sys.argv[2])
-        else:
-            attachname = str(sys.argv[1])
-        part.add_header('Content-Disposition', 'attachment', filename=attachname)
-        msg.attach(part)
-    msg['To'] = recipient[1]
+    
+
+
+    # ./attach folder METHOD
+    attach_files_METHOD1(msg)
+
+    # sys.argv METHOD
+    # attach_files_METHOD2(msg)
+
+
+
+    
+    msg["To"] = recipient[1]
     send_mail(msg, server)
     count += 1
+
+
 
 disconnect(server)
 print("{} mails sent. Exiting...".format(count))
