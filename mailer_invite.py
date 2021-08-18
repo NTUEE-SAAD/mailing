@@ -107,12 +107,15 @@ for recipient in recipients:
         print("{} mails sent, resting...".format(count))
         time.sleep(20)  # for mail server limitation
     msg = MIMEMultipart()
+    #讓寄件人顯示為本來信箱
     msg["From"] = sender
-    # msg['From'] = Header("台大電機系學會學術部", "utf-8")
-    # might cause the emails be classified as spams
+
+    #讓寄件人顯示改成學術部
+    #FROM = '台大電機系學會學術部'
+    #msg['From'] = formataddr((Header(FROM, 'utf-8').encode(), sender))
 
     # remember to change!
-    msg["Subject"] = "E沒有 阻止"
+    msg["Subject"] = "預選"
     msg.preamble = "Multipart massage.\n"
 
 
