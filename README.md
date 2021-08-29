@@ -6,9 +6,10 @@
 
 ### Files
 * mailer_invite.py 寄信程式<br>
-  * 若是08以上請把40行去註解，並註解掉38行。<br>
+  * 若是08以上請把46行去註解，並註解掉44行。<br>
     若是09以下則不需更動。
-  * **記得改第98行的信件主旨！**
+  * **記得改第118行的信件主旨！**
+  * 要讓寄件人顯示改成學術部，把114&115行去註解
 
 - letter.txt 放信件內文
 
@@ -18,7 +19,7 @@
 - test_list 收件人及信箱名單<br>
   - 收件人和信箱是空白分隔。所以姓名如果是2個字，姓和名之間不能有空格。
   - 名單格式舉例：莊詠翔 b08901093@ntu.edu.tw
-  - 如果test_list只有姓名和學號兩欄，那可以對mailer_invite.py 第129行的 msg["To"] 動手腳，自己加上"@ntu.edu.tw"
+  - 如果test_list只有姓名和學號兩欄，那可以對mailer_invite.py 第137行的 msg["To"] 動手腳，自己加上"@ntu.edu.tw"
 
 ### Features
 * Sending Emails without Attachments
