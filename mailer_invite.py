@@ -20,13 +20,17 @@ import re
 import configparser as cp
 import os
 import os.path
+import csv
+import email.message
+from string import Template
+from pathlib import Path
 
 # write your letter in letter.txt
-with open("letter.txt", "r", encoding="utf-8") as infile:
+with open("letter5.txt", "r", encoding="utf-8") as infile:
     text = infile.read()
 
 # choose the receiver list
-email_list = "test_list"
+email_list = "test_test.csv"
 
 # load email account info
 config = cp.ConfigParser()
@@ -91,54 +95,55 @@ def attach_files_METHOD2(msg):
 # recipient  = recipient's email address
 sender = "{}@ntu.edu.tw".format(user)
 # 2. Sender email address (yours).
-recipients = read_list(email_list)
+# recipients = read_list(email_list)
 ## Uncomment this line to send to yourself. (for TESTING)
 server = connectSMTP()
 count = 0
 
-for recipient in recipients:
-    if count % 10 == 0 and count > 0:
-        print("{} mails sent, resting...".format(count))
-        time.sleep(10)  # for mail server limitation
-    if count % 130 == 0 and count > 0:
-        print("{} mails sent, resting...".format(count))
-        time.sleep(20)  # for mail server limitation
-    if count % 260 == 0 and count > 0:
-        print("{} mails sent, resting...".format(count))
-        time.sleep(20)  # for mail server limitation
-    msg = MIMEMultipart()
-    #讓寄件人顯示為本來信箱
-    msg["From"] = sender
+with open(email_list, 'r', newline = '') as csvfile:
+    recipients = csv.reader(csvfile)
 
-    #讓寄件人顯示改成學術部
-    #FROM = '台大電機系學會學術部'
-    #msg['From'] = formataddr((Header(FROM, 'utf-8').encode(), sender))
+    for recipient in recipients:
+        if count % 10 == 0 and count > 0:
+            print("{} mails sent, resting...".format(count))
+            time.sleep(10)  # for mail server limitation
+        if count % 130 == 0 and count > 0:
+            print("{} mails sent, resting...".format(count))
+            time.sleep(20)  # for mail server limitation
+        if count % 260 == 0 and count > 0:
+            print("{} mails sent, resting...".format(count))
+            time.sleep(20)  # for mail server limitation
+        # msg = MIMEMultipart()
+        msg = email.message.EmailMessage()
+        #讓寄件人顯示為本來信箱
+        #msg["From"] = sender
+        #讓寄件人顯示改成學術部
+        FROM = '台大電機系學會學術部'
+        msg['From'] = formataddr((Header(FROM, 'utf-8').encode(), sender))
 
-    # remember to change!
-    msg["Subject"] = "預選"
-    msg.preamble = "Multipart massage.\n"
+        # remember to change!
+        msg["Subject"] = "【學術部公告】：110-1一階領書重要須知"
+        # letter content for text
+        msg.preamble = "Multipart massage.\n"
+        name = recipient[1]
+        part = MIMEText("{}同學您好：\n\n".format(name))
+        msg.attach(part)
+        # letter content for html
+        template = Template(Path("letter5.html").read_text())
+        # name your customize information and subtitute it here
+        # example here: $user in html
+        body = template.substitute({ "user": recipient[1] })
+        msg.attach(MIMEText(body, "html"))
 
+        # ./attach folder METHOD
+        attach_files_METHOD1(msg)
 
-    # letter content
-    part = MIMEText("{}同學您好：\n\n{}".format(recipient[0], text))
-    msg.attach(part)
-    
+        # sys.argv METHOD
+        # attach_files_METHOD2(msg)
 
+        msg["To"] = (recipient[0] + "@ntu.edu.tw")
+        send_mail(msg, server)
+        count += 1
 
-    # ./attach folder METHOD
-    attach_files_METHOD1(msg)
-
-    # sys.argv METHOD
-    # attach_files_METHOD2(msg)
-
-
-
-    
-    msg["To"] = recipient[1]
-    send_mail(msg, server)
-    count += 1
-
-
-
-disconnect(server)
-print("{} mails sent. Exiting...".format(count))
+    disconnect(server)
+    print("{} mails sent. Exiting...".format(count))
