@@ -1,49 +1,42 @@
 # 學術部寄信程式
 
-### Requirements
-- python 3.X 64bit 
+## Requirements
+
+- python 3.X 64bit
 - 套件皆有內建，不需額外安裝
 
-### Files
-* mailer_invite.py 寄信程式<br>
-  * 若是08以上請把46行去註解，並註解掉44行。<br>
-    若是09以下則不需更動。
-  * **記得改第118行的信件主旨！**
-  * 要讓寄件人顯示改成學術部，把114&115行去註解
+## Usage
 
-- letter.txt 放信件內文
+- 請複製letters資料夾中的template來創建新的信件
+- content.html 放信件內文
+- recipients.csv 收件人及信箱名單
+  - 可以用excel編輯csv檔案，格式詳見template
+  - 第一欄填收件人姓名，第二欄填收件人信箱
+  - 如果是臺大的信箱，可以不用填 '@ntu.edu.tw'，會自動加上去
+- config.json 裡面可以修改信件主旨以及寄件人名稱顯示，如果from留空白會顯示你原本的名稱
+- account.ini 裡面改成自己的計中帳密
+  - **把檔案寄給別人時這個要改掉，不然大家都知道了**
 
-* account.ini 裡面改成自己的計中帳密<br>
-	* **把檔案寄給別人時這個要改掉，不然大家都知道了XD**
+## Run
 
-- test_list 收件人及信箱名單<br>
-  - 收件人和信箱是空白分隔。所以姓名如果是2個字，姓和名之間不能有空格。
-  - 名單格式舉例：莊詠翔 b08901093@ntu.edu.tw
-  - 如果test_list只有姓名和學號兩欄，那可以對mailer_invite.py 第137行的 msg["To"] 動手腳，自己加上"@ntu.edu.tw"
+    python mailer_invite.py LETTER
+    python3 mailer_invite.py LETTER
 
-### Features
-* Sending Emails without Attachments
-	* To run(Linux): python3 mailer_invite.py
-	* To run(Win  ): python mailer_invite.py
-	
+LETTER is the name of the folder in the 'letters' folder where your email lives
+
+### Options
+
+    -h, --help    show help message and exit
+    -a, --attach  attach files in ./attach folder to the email
+    -t, --test    send email in test mode (to yourself)
+
+## Examples
+
+    python mailer_invite.py template -t
+    python mailer_invite.py letter1
+
+## Features
+
 - Sending Emails with attachments
-	- METHOD1: 
-		This method will attach all the files in the ./attach folder.
-		If you need the files be attached in order (especially images), add numbers in front of their filenames.
-		- To run(Linux): python3 mailer_invite.py
-		- To run(Win  ): python mailer_invite.py
-	
-	* METHOD2:
-		By sys.argvs. Make sure your attachment is under the current directory.
-		No need to modify filenames. The files would be attached in the order as expected.
-		* To run(Linux): python3 mailer_invite.py Classic.png Mexican.png
-		* To run(Win  ): python3 mailer_invite.py Classic.png Mexican.png
-	
-
-### Debug Info
-- 若遇到[SMTP主機相關Error](https://docs.python.org/zh-tw/3/library/smtplib.html)
-	- 搜尋 ntu mail SMTP主機還有連接埠(以下以09以後為例)
-		- https://jsc.cc.ntu.edu.tw/ntucc/email/mailsoftwaresetup.html
-	- 在第38行
-	- `s = smtplib.SMTP_SSL(HOST, PORT)`
-	- 更改成新的主機(HOST)和連接埠(PORT)
+  This method will attach all the files in ./attach folder.
+  If you need the files be attached in order (especially images), add numbers in front of their filenames.

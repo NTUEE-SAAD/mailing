@@ -3,7 +3,8 @@
 # Purpose:      Automatic send 專題說明會 invitation mails to professors   #
 # Last changed: 2015/06/21                                               #
 # Author:       Yi-Lin Juang (B02 學術長)                                 #
-# Edited:       2021/07/01 Eleson Chuang (B08 Python大佬)                 #
+# Edited:       2021/12/13 莊加旭
+#               2021/07/01 Eleson Chuang (B08 Python大佬)                 #
 #               2018/05/22 Joey Wang (B05 學術長)                         #
 # Copyleft:     (ɔ)NTUEE                                                 #
 ##########################################################################
@@ -16,63 +17,82 @@ from email.utils import formataddr
 from email.mime.image import MIMEImage
 import sys
 import time
-import re
 import configparser as cp
 import os
 import os.path
 import csv
-import email.message
 from string import Template
 from pathlib import Path
+from optparse import OptionParser
+import json
 
-# write your letter in letter.txt
-with open("letter5.txt", "r", encoding="utf-8") as infile:
-    text = infile.read()
 
-# choose the receiver list
-email_list = "test_test.csv"
-
-# load email account info
-config = cp.ConfigParser()
-config.read("account.ini")  # reading sender account information
-try:
-    user = config["ACCOUNT"]["user"]
-    pw = config["ACCOUNT"]["pw"]
-except:
-    print("Reading config file fail!\nPlease check the config file...")
-    exit()
-
-def connectSMTP():
-    # Send the message via NTU SMTP server.
-    # For students ID larger than 09
-    s = smtplib.SMTP_SSL("smtps.ntu.edu.tw", 465)
-    # For students ID smaller than 08 i.e. elders
-    # s = smtplib.SMTP('mail.ntu.edu.tw', 587)
-    s.set_debuglevel(False)
+def connectSMTP(userid, password) -> smtplib.SMTP_SSL:
+    try:
+        # check the user's time of enrollment, ntumail before 09 uses different server setting
+        if int(userid[1:3]) >= 9:
+            server = smtplib.SMTP_SSL("smtps.ntu.edu.tw", 465, timeout=5)
+        else:
+            server = smtplib.SMTP('mail.ntu.edu.tw', 587)
+    except Exception as e:
+        print(e)
+        print('error: smtp connection failed, try using another wifi')
     # Uncomment this line to go through SMTP connection status.
-    s.ehlo()
-    if s.has_extn("STARTTLS"):
-        s.starttls()
-        s.ehlo()
-    s.login(user, pw)
+    server.ehlo()
+    if server.has_extn("STARTTLS"):
+        server.starttls()
+        server.ehlo()
+    try:
+        server.login(userid, password)
+    except:
+        print('error: login failed, please check your acount.ini file')
+
     print("SMTP Connected!")
-    return s
+    return server
 
-def disconnect(server):
-    server.quit()
 
-def read_list(file_name):
-    obj = list()
-    with open(file_name, "r", encoding="utf-8") as f:
-        for line in f:
-            t = line.split()
-            if t is not None:
-                obj.append(t)
-    return obj
+def load_account_config() -> tuple:
+    '''load account info from account.ini'''
+    account_config = cp.ConfigParser()
+    account_config.read("account.ini")
+    try:
+        userid = account_config["ACCOUNT"]["userid"]
+        password = account_config["ACCOUNT"]["password"]
+    except Exception as e:
+        print(e)
+        print("Fail reading the config file!\nPlease check the account.ini ...")
+        exit()
+
+    return [userid, password]
+
+
+def load_recipient_list(path):
+    with open(path, 'r', newline='', encoding="utf-8") as csvfile:
+        recipients = csv.reader(csvfile)
+        recipients = [recipient for recipient in recipients]
+
+    return recipients
+
+
+def load_letter_config(path):
+    with open(path, encoding='utf-8') as f:
+        letter_config = json.load(f)
+
+    try:
+        email_subject = letter_config["subject"]
+        email_from = letter_config["from"]
+    except Exception as e:
+        print(e)
+        print("Fail reading letter config file!\nPlease check your config.json")
+        exit()
+
+    return [email_subject, email_from]
+
 
 def send_mail(msg, server):
     server.sendmail(msg["From"], msg["To"], msg.as_string())
-    print("Sent message from {} to {}".format(msg["From"], msg["To"]))
+    print(f'Sent mail to {msg["To"]}')
+
 
 def attach_files_METHOD1(msg):
     '''This method will attach all the files in the ./attach folder.'''
@@ -84,66 +104,97 @@ def attach_files_METHOD1(msg):
         attachment.add_header('Content-Disposition', 'inline', filename=f)
         msg.attach(attachment)
 
+
 def attach_files_METHOD2(msg):
     '''Reading attachment, put file_path in args'''
     for argvs in sys.argv[1:]:
         attachment = MIMEApplication(open(str(argvs), "rb").read())
-        attachment.add_header("Content-Disposition", "attachment", filename=str(argvs))
+        attachment.add_header("Content-Disposition",
+                              "attachment", filename=str(argvs))
         msg.attach(attachment)
 
 
-# recipient  = recipient's email address
-sender = "{}@ntu.edu.tw".format(user)
-# 2. Sender email address (yours).
-# recipients = read_list(email_list)
-## Uncomment this line to send to yourself. (for TESTING)
-server = connectSMTP()
-count = 0
+def server_rest(count):
+    '''for bypassing email server limitation'''
+    if count % 10 == 0 and count > 0:
+        print(f'{count} mails sent, resting...')
+        time.sleep(10)
+    if count % 130 == 0 and count > 0:
+        print(f'{count} mails sent, resting...')
+        time.sleep(20)
+    if count % 260 == 0 and count > 0:
+        print(f'{count} mails sent, resting...')
+        time.sleep(20)
 
-with open(email_list, 'r', newline = '') as csvfile:
-    recipients = csv.reader(csvfile)
+
+def main(opts, args):
+    # choose the receiver list
+    email_root_path = Path(f'letters/{args[0]}')
+    email_list_path = os.path.join(email_root_path, Path("recipients.csv"))
+    email_config_path = os.path.join(email_root_path, Path("config.json"))
+    email_content_path = os.path.join(email_root_path, Path("content.html"))
+
+    # load letter config
+    [email_subject, email_from] = load_letter_config(email_config_path)
+
+    # load email account info
+    userid, password = load_account_config()
+
+    # load recipient list
+    if opts.test:
+        recipients = [["王小明", f'{userid}@ntu.edu.tw']]
+    else:
+        recipients = load_recipient_list(email_list_path)
+
+    # load content as template string
+    email_html = Template(Path(email_content_path).read_text(encoding="utf-8"))
+
+    server = connectSMTP(userid, password)
+    sent_n = 0
 
     for recipient in recipients:
-        if count % 10 == 0 and count > 0:
-            print("{} mails sent, resting...".format(count))
-            time.sleep(10)  # for mail server limitation
-        if count % 130 == 0 and count > 0:
-            print("{} mails sent, resting...".format(count))
-            time.sleep(20)  # for mail server limitation
-        if count % 260 == 0 and count > 0:
-            print("{} mails sent, resting...".format(count))
-            time.sleep(20)  # for mail server limitation
-        # msg = MIMEMultipart()
-        msg = email.message.EmailMessage()
-        #讓寄件人顯示為本來信箱
-        #msg["From"] = sender
-        #讓寄件人顯示改成學術部
-        FROM = '台大電機系學會學術部'
-        msg['From'] = formataddr((Header(FROM, 'utf-8').encode(), sender))
+        email = MIMEMultipart("alternative")
+        email["Subject"] = email_subject
 
-        # remember to change!
-        msg["Subject"] = "【學術部公告】：110-1一階領書重要須知"
-        # letter content for text
-        msg.preamble = "Multipart massage.\n"
-        name = recipient[1]
-        part = MIMEText("{}同學您好：\n\n".format(name))
-        msg.attach(part)
-        # letter content for html
-        template = Template(Path("letter5.html").read_text())
-        # name your customize information and subtitute it here
-        # example here: $user in html
-        body = template.substitute({ "user": recipient[1] })
-        msg.attach(MIMEText(body, "html"))
+        # letter content
+        body = email_html.substitute({"recipient": recipient[0]})
+        email.attach(MIMEText(body, "html"))
 
-        # ./attach folder METHOD
-        attach_files_METHOD1(msg)
+        if '@' in recipient[1]:
+            email["To"] = recipient[1]
+        else:
+            email["To"] = recipient[1] + "@ntu.edu.tw"
 
-        # sys.argv METHOD
-        # attach_files_METHOD2(msg)
+        # check if the 'from' field in config.json is filled
+        if len(email_from) > 0:
+            email['From'] = formataddr(
+                (Header(email_from, 'utf-8').encode(), f'{userid}@ntu.edu.tw'))
 
-        msg["To"] = (recipient[0] + "@ntu.edu.tw")
-        send_mail(msg, server)
-        count += 1
+        # attach enerything in './attach' folder
+        if(opts.attach):
+            attach_files_METHOD1(email)
 
-    disconnect(server)
-    print("{} mails sent. Exiting...".format(count))
+        send_mail(email, server)
+
+        sent_n += 1
+        server_rest(sent_n)
+
+    server.quit()
+    print(f'{sent_n} mails sent{" in test mode" if opts.test else ""}, exitting...')
+
+
+if __name__ == '__main__':
+    parser = OptionParser()
+    parser.set_usage(
+        "python mailer_invite.py <LETTER>\nLETTER is the name of the folder in the 'letters' folder where your email lives")
+    parser.add_option("-a", "--attach", dest="attach", default=False, action="store_true",
+                      help="attach files  in ./attach folder to the email")
+    parser.add_option("-t", "--test", dest="test", default=False, action="store_true",
+                      help="send email in test mode (to yourself)")
+    opts, args = parser.parse_args()
+
+    if len(args) == 0:
+        print("please specify the letter you want to send")
+        exit()
+
+    main(opts, args)
