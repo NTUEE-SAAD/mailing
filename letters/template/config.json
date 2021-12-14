@@ -1,4 +1,5 @@
 {
-  "subject": "主旨",
-  "from": "臺大電機系學會學術部"
+    "subject": "主旨",
+    "from": "臺大電機系學會學術部",
+    "recipientTitle": { "title": "教授", "lastNameOnly": true }
 }

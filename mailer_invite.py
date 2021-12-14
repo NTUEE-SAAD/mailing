@@ -37,7 +37,7 @@ def connectSMTP(userid, password) -> smtplib.SMTP_SSL:
     except Exception as e:
         print(e)
         print('error: smtp connection failed, try using another wifi')
-    # Uncomment this line to go through SMTP connection status.
+
     server.ehlo()
     if server.has_extn("STARTTLS"):
         server.starttls()
@@ -51,7 +51,7 @@ def connectSMTP(userid, password) -> smtplib.SMTP_SSL:
     return server
 
 
-def load_account_config() -> tuple:
+def load_account_config():
     '''load account info from account.ini'''
     account_config = cp.ConfigParser()
     account_config.read("account.ini")
@@ -69,8 +69,20 @@ def load_account_config() -> tuple:
 def load_recipient_list(path):
     with open(path, 'r', newline='', encoding="utf-8") as csvfile:
         recipients = csv.reader(csvfile)
-        recipients = [recipient for recipient in recipients]
+        recipients = [recipient[:2] for recipient in recipients]
 
+    return recipients
+
+
+def handle_recipient_title(recipients, recipTitle, lastNameOnly):
+    # cat title to recipient names
+    if len(recipTitle) > 0:
+        for recipient in recipients:
+            if lastNameOnly:
+                recipient[0] = recipient[0][0] + recipTitle
+            else:
+                recipient[0] += recipTitle
+                
     return recipients
 
 
@@ -81,12 +93,17 @@ def load_letter_config(path):
     try:
         email_subject = letter_config["subject"]
         email_from = letter_config["from"]
+        recipTitle = letter_config["recipientTitle"]["title"]
+        if len(recipTitle) > 0:
+            lastNameOnly = letter_config["recipientTitle"]["lastNameOnly"]
+        else:
+            lastNameOnly = False
     except Exception as e:
         print(e)
         print("Fail reading letter config file!\nPlease check your config.json")
         exit()
 
-    return [email_subject, email_from]
+    return [email_subject, email_from, recipTitle, lastNameOnly]
 
 
 def send_mail(msg, server):
@@ -135,7 +152,8 @@ def main(opts, args):
     email_content_path = os.path.join(email_root_path, Path("content.html"))
 
     # load letter config
-    [email_subject, email_from] = load_letter_config(email_config_path)
+    [email_subject, email_from, recipTitle,
+        lastNameOnly] = load_letter_config(email_config_path)
 
     # load email account info
     userid, password = load_account_config()
@@ -146,6 +164,8 @@ def main(opts, args):
     else:
         recipients = load_recipient_list(email_list_path)
 
+    recipients = handle_recipient_title(recipients, recipTitle, lastNameOnly)
+    
     # load content as template string
     email_html = Template(Path(email_content_path).read_text(encoding="utf-8"))
 

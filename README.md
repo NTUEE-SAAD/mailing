@@ -9,11 +9,16 @@
 
 - 請複製letters資料夾中的template來創建新的信件
 - content.html 放信件內文
+  - **記得在內文中加入"$recipient"**，此處會被替換成收件人，及其稱謂
 - recipients.csv 收件人及信箱名單
   - 可以用excel編輯csv檔案，格式詳見template
-  - 第一欄填收件人姓名，第二欄填收件人信箱
+  - **第一欄填收件人姓名，第二欄填收件人信箱**
   - 如果是臺大的信箱，可以不用填 '@ntu.edu.tw'，會自動加上去
-- config.json 裡面可以修改信件主旨以及寄件人名稱顯示，如果from留空白會顯示你原本的名稱
+- config.json 裡面可以修改信件設定
+  - subject為主旨
+  - from為寄件人名稱顯示，如果from留空白會顯示你原本的名稱
+  - recipientTitle裡面的Title不是空字串則會把這個title接到收件人姓名後面
+  - lastNameOnly可以決定要使用「姓氏+稱謂」或是「全名+稱謂」
 - account.ini 裡面改成自己的計中帳密
   - **把檔案寄給別人時這個要改掉，不然大家都知道了**
 
