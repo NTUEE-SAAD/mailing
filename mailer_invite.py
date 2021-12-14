@@ -13,8 +13,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
 from email.mime.text import MIMEText
 from email.header import Header
-from email.utils import formataddr
-from email.mime.image import MIMEImage
+from email.utils import formataddr, formatdate
 import sys
 import time
 import configparser as cp
@@ -82,7 +81,7 @@ def handle_recipient_title(recipients, recipTitle, lastNameOnly):
                 recipient[0] = recipient[0][0] + recipTitle
             else:
                 recipient[0] += recipTitle
-                
+
     return recipients
 
 
@@ -111,25 +110,14 @@ def send_mail(msg, server):
     print(f'Sent mail to {msg["To"]}')
 
 
-def attach_files_METHOD1(msg):
+def attach_files(msg, path):
     '''This method will attach all the files in the ./attach folder.'''
-    dir_path = os.getcwd()+"/attach"
-    files = os.listdir("attach")
-    for f in files:  # add files to the message
-        file_path = os.path.join(dir_path, f)
-        attachment = MIMEApplication(open(file_path, "rb").read())
-        attachment.add_header('Content-Disposition', 'inline', filename=f)
+    attachments = os.listdir(path)
+    for a in attachments:
+        attachment = MIMEApplication(
+            open(os.path.join(path, a), "rb").read(), Name=a)
+        attachment['Content-Disposition'] = f'attachment; filename="{a}"'
         msg.attach(attachment)
-
-
-def attach_files_METHOD2(msg):
-    '''Reading attachment, put file_path in args'''
-    for argvs in sys.argv[1:]:
-        attachment = MIMEApplication(open(str(argvs), "rb").read())
-        attachment.add_header("Content-Disposition",
-                              "attachment", filename=str(argvs))
-        msg.attach(attachment)
-
 
 def server_rest(count):
     '''for bypassing email server limitation'''
@@ -150,6 +138,7 @@ def main(opts, args):
     email_list_path = os.path.join(email_root_path, Path("recipients.csv"))
     email_config_path = os.path.join(email_root_path, Path("config.json"))
     email_content_path = os.path.join(email_root_path, Path("content.html"))
+    email_attachments_path = os.path.join(email_root_path, Path("attachments"))
 
     # load letter config
     [email_subject, email_from, recipTitle,
@@ -165,7 +154,7 @@ def main(opts, args):
         recipients = load_recipient_list(email_list_path)
 
     recipients = handle_recipient_title(recipients, recipTitle, lastNameOnly)
-    
+
     # load content as template string
     email_html = Template(Path(email_content_path).read_text(encoding="utf-8"))
 
@@ -173,8 +162,9 @@ def main(opts, args):
     sent_n = 0
 
     for recipient in recipients:
-        email = MIMEMultipart("alternative")
+        email = MIMEMultipart()
         email["Subject"] = email_subject
+        email["Date"] = formatdate(localtime=True)
 
         # letter content
         body = email_html.substitute({"recipient": recipient[0]})
@@ -190,9 +180,9 @@ def main(opts, args):
             email['From'] = formataddr(
                 (Header(email_from, 'utf-8').encode(), f'{userid}@ntu.edu.tw'))
 
-        # attach enerything in './attach' folder
+        # attach enerything in '/attachments' folder
         if(opts.attach):
-            attach_files_METHOD1(email)
+            attach_files(email, email_attachments_path)
 
         send_mail(email, server)
 
