@@ -9,17 +9,19 @@
 # Copyleft:     (ɔ)NTUEE                                                 #
 ##########################################################################
 import smtplib
+import poplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
 from email.mime.text import MIMEText
 from email.header import Header
 from email.utils import formataddr, formatdate
-import sys
+from email.parser import Parser as EmailParser
+import email.message
 import time
 import configparser as cp
-import os
 import os.path
 import csv
+import re
 from string import Template
 from pathlib import Path
 from optparse import OptionParser
@@ -139,6 +141,59 @@ def server_rest(count):
         time.sleep(20)
 
 
+def handle_bounce_backs(retr_n, userid, password):
+    '''show help message if emails are bounced back, this usually happens when trying to email a wrong school email address'''
+    print("checking for bounce-backs...")
+    time.sleep(3)  # wait for bounce back
+    
+    # connect to pop3 server
+    pop3 = poplib.POP3_SSL('msa.ntu.edu.tw', 995)
+    pop3.user(userid)
+    pop3.pass_(password)
+
+    # retrieve last n emails
+    _, mails, _ = pop3.list()
+    email_contents = [pop3.retr(i)[1]
+                      for i in range(len(mails), len(mails) - retr_n, -1)]
+
+    # Concat message pieces:
+    email_contents = [b'\r\n'.join(mssg).decode('utf-8')
+                      for mssg in email_contents]
+    
+    # Parse message into an email object:
+    email_contents = [EmailParser().parsestr(content, headersonly=True)
+                      for content in email_contents]
+
+    bounced_list = []
+
+    for content in email_contents:
+        if not re.match('Delivery Status Notification', content['subject']):
+            continue
+
+        for part in content.walk():
+            if part.get_content_type():
+                body = str(part.get_payload(decode=True))
+                
+                # match for email addresses
+                bounced = re.findall(
+                    '[a-z0-9-_\.]+@[a-z0-9-\.]+\.[a-z\.]{2,5}', body)
+
+                if bounced:
+                    bounced = str(bounced[0].replace(userid, ''))
+                    if bounced == '':
+                        break
+
+                    bounced_list.append(bounced)
+
+    if len(bounced_list) > 0:
+        print('emails sent to these addresses are bounced back (failed):')
+        for address in bounced_list:
+            print(f'\t{address},')
+        print('\nPlease check these emails')
+    else:
+        print('No bounce-backs found, all emails are delivered successfully')
+
+
 def main(opts, args):
     # choose the receiver list
     email_root_path = Path(f'letters/{args[0]}')
@@ -165,12 +220,12 @@ def main(opts, args):
     # load content as template string
     email_html = Template(Path(email_content_path).read_text(encoding="utf-8"))
 
-    server = connectSMTP(userid, password)
+    smtp = connectSMTP(userid, password)
     sent_n = 0
 
     if not opts.test:
         isSure = input(
-            f'about send emails to {len(recipients)} recipients, are you sure? [yn]:')
+            f'about send emails to {len(recipients)} recipients, are you sure? [yn]:\n')
         if isSure == 'y' or isSure == 'Y':
             pass
         else:
@@ -200,23 +255,25 @@ def main(opts, args):
         if(opts.attach):
             attach_files(email, email_attachments_path)
 
-        success = send_mail(email, server)
+        success = send_mail(email, smtp)
         sent_n += 1 if success else 0
         server_rest(sent_n)
 
-    server.quit()
-    print(f'{sent_n}/{len(recipients)} mails sent successfully{" in test mode" if opts.test else ""}, exitting...')
+    smtp.quit()
+    print(f'{sent_n}/{len(recipients)} mails sent{" in test mode" if opts.test else ""}.')
+
+    handle_bounce_backs(len(recipients), userid, password)
 
 
 if __name__ == '__main__':
-    parser = OptionParser()
-    parser.set_usage(
+    optParser = OptionParser()
+    optParser.set_usage(
         "python mailer_invite.py <LETTER>\nLETTER is the name of the folder in the 'letters' folder where your email lives")
-    parser.add_option("-a", "--attach", dest="attach", default=False, action="store_true",
-                      help="attach files in 'letters/LETTER/attachments' folder to the email")
-    parser.add_option("-t", "--test", dest="test", default=False, action="store_true",
-                      help="send email in test mode (to yourself)")
-    opts, args = parser.parse_args()
+    optParser.add_option("-a", "--attach", dest="attach", default=False, action="store_true",
+                         help="attach files in 'letters/LETTER/attachments' folder to the email")
+    optParser.add_option("-t", "--test", dest="test", default=False, action="store_true",
+                         help="send email in test mode (to yourself)")
+    opts, args = optParser.parse_args()
 
     if len(args) == 0:
         print("please specify the letter you want to send")
