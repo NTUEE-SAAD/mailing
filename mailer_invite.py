@@ -167,7 +167,7 @@ def handle_bounce_backs(retr_n, userid, password):
     bounced_list = []
 
     for content in email_contents:
-        if not re.match('Delivery Status Notification', content['subject']):
+        if not re.match('(Delivery Status Notification)|(Undelivered Mail Returned to Sender)', content['subject']):
             continue
 
         for part in content.walk():
@@ -189,9 +189,11 @@ def handle_bounce_backs(retr_n, userid, password):
         print('emails sent to these addresses are bounced back (failed):')
         for address in bounced_list:
             print(f'\t{address},')
-        print('\nPlease check these emails')
+        print('Please check these emails.')
     else:
         print('No bounce-backs found, all emails are delivered successfully')
+
+    return len(bounced_list)
 
 
 def main(opts, args):
@@ -260,9 +262,10 @@ def main(opts, args):
         server_rest(sent_n)
 
     smtp.quit()
-    print(f'{sent_n}/{len(recipients)} mails sent{" in test mode" if opts.test else ""}.')
 
-    handle_bounce_backs(len(recipients), userid, password)
+    bounced_n = handle_bounce_backs(len(recipients), userid, password)
+    
+    print(f'{sent_n - bounced_n}/{len(recipients)} mails sent successfully{" in test mode" if opts.test else ""}.')
 
 
 if __name__ == '__main__':
