@@ -105,11 +105,6 @@ def load_letter_config(path):
     return [email_subject, email_from, recipTitle, lastNameOnly]
 
 
-def send_mail(msg, server):
-    server.sendmail(msg["From"], msg["To"], msg.as_string())
-    print(f'Sent mail to {msg["To"]}')
-
-
 def attach_files(msg, path):
     '''This method will attach all the files in the ./attach folder.'''
     attachments = os.listdir(path)
@@ -118,6 +113,18 @@ def attach_files(msg, path):
             open(os.path.join(path, a), "rb").read(), Name=a)
         attachment['Content-Disposition'] = f'attachment; filename="{a}"'
         msg.attach(attachment)
+
+
+def send_mail(email, server):
+    try:
+        server.sendmail(email["From"], email["To"], email.as_string())
+    except:
+        print(f'failed to send email to {email["To"]}')
+        return False
+
+    print(f'Sent mail to {email["To"]}')
+    return True
+
 
 def server_rest(count):
     '''for bypassing email server limitation'''
@@ -162,7 +169,8 @@ def main(opts, args):
     sent_n = 0
 
     if not opts.test:
-        isSure = input(f'about send emails to {len(recipients)} recipients, are you sure? [yn]:')
+        isSure = input(
+            f'about send emails to {len(recipients)} recipients, are you sure? [yn]:')
         if isSure == 'y' or isSure == 'Y':
             pass
         else:
@@ -192,13 +200,12 @@ def main(opts, args):
         if(opts.attach):
             attach_files(email, email_attachments_path)
 
-        send_mail(email, server)
-
-        sent_n += 1
+        success = send_mail(email, server)
+        sent_n += 1 if success else 0
         server_rest(sent_n)
 
     server.quit()
-    print(f'{sent_n} mails sent{" in test mode" if opts.test else ""}, exitting...')
+    print(f'{sent_n}/{len(recipients)} mails sent successfully{" in test mode" if opts.test else ""}, exitting...')
 
 
 if __name__ == '__main__':
