@@ -161,6 +161,14 @@ def main(opts, args):
     server = connectSMTP(userid, password)
     sent_n = 0
 
+    if not opts.test:
+        isSure = input(f'about send emails to {len(recipients)} recipients, are you sure? [yn]:')
+        if isSure == 'y' or isSure == 'Y':
+            pass
+        else:
+            print('Please check the email in test mode before you send it.')
+            exit()
+
     for recipient in recipients:
         email = MIMEMultipart()
         email["Subject"] = email_subject
