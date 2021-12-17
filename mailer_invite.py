@@ -16,9 +16,8 @@ from email.mime.text import MIMEText
 from email.header import Header
 from email.utils import formataddr, formatdate
 from email.parser import Parser as EmailParser
-import email.message
+from configparser import ConfigParser
 import time
-import configparser as cp
 import os.path
 import csv
 import re
@@ -54,17 +53,18 @@ def connectSMTP(userid, password) -> smtplib.SMTP_SSL:
 
 def load_account_config():
     '''load account info from account.ini'''
-    account_config = cp.ConfigParser()
+    account_config = ConfigParser()
     account_config.read("account.ini")
     try:
         userid = account_config["ACCOUNT"]["userid"]
         password = account_config["ACCOUNT"]["password"]
+        sender_name = account_config["ACCOUNT"]["name"]
     except Exception as e:
         print(e)
         print("Fail reading the config file!\nPlease check the account.ini ...")
         exit()
 
-    return [userid, password]
+    return [userid, password, sender_name]
 
 
 def load_recipient_list(path):
@@ -145,7 +145,7 @@ def handle_bounce_backs(retr_n, userid, password):
     '''show help message if emails are bounced back, this usually happens when trying to email a wrong school email address'''
     print("checking for bounce-backs...")
     time.sleep(3)  # wait for bounce back
-    
+
     # connect to pop3 server
     pop3 = poplib.POP3_SSL('msa.ntu.edu.tw', 995)
     pop3.user(userid)
@@ -159,7 +159,7 @@ def handle_bounce_backs(retr_n, userid, password):
     # Concat message pieces:
     email_contents = [b'\r\n'.join(mssg).decode('utf-8')
                       for mssg in email_contents]
-    
+
     # Parse message into an email object:
     email_contents = [EmailParser().parsestr(content, headersonly=True)
                       for content in email_contents]
@@ -173,7 +173,7 @@ def handle_bounce_backs(retr_n, userid, password):
         for part in content.walk():
             if part.get_content_type():
                 body = str(part.get_payload(decode=True))
-                
+
                 # match for email addresses
                 bounced = re.findall(
                     '[a-z0-9-_\.]+@[a-z0-9-\.]+\.[a-z\.]{2,5}', body)
@@ -205,11 +205,11 @@ def main(opts, args):
     email_attachments_path = os.path.join(email_root_path, Path("attachments"))
 
     # load letter config
-    [email_subject, email_from, recipTitle,
-        lastNameOnly] = load_letter_config(email_config_path)
+    email_subject, email_from, recipTitle, lastNameOnly = load_letter_config(
+        email_config_path)
 
     # load email account info
-    userid, password = load_account_config()
+    userid, password, sender_name = load_account_config()
 
     # load recipient list
     if opts.test:
@@ -240,7 +240,8 @@ def main(opts, args):
         email["Date"] = formatdate(localtime=True)
 
         # letter content
-        body = email_html.substitute({"recipient": recipient[0]})
+        body = email_html.substitute(
+            {"recipient": recipient[0], "sender": sender_name})
         email.attach(MIMEText(body, "html"))
 
         if '@' in recipient[1]:
@@ -250,12 +251,14 @@ def main(opts, args):
 
         # check if the 'from' field in config.json is filled
         if len(email_from) > 0:
-            email['From'] = formataddr(
-                (Header(email_from, 'utf-8').encode(), f'{userid}@ntu.edu.tw'))
+            email['From'] = formataddr((email_from, f'{userid}@ntu.edu.tw'))
 
         # attach enerything in '/attachments' folder
         if(opts.attach):
             attach_files(email, email_attachments_path)
+
+        if opts.nosend:
+            continue
 
         success = send_mail(email, smtp)
         sent_n += 1 if success else 0
@@ -264,7 +267,7 @@ def main(opts, args):
     smtp.quit()
 
     bounced_n = handle_bounce_backs(len(recipients), userid, password)
-    
+
     print(f'{sent_n - bounced_n}/{len(recipients)} mails sent successfully{" in test mode" if opts.test else ""}.')
 
 
@@ -276,6 +279,8 @@ if __name__ == '__main__':
                          help="attach files in 'letters/LETTER/attachments' folder to the email")
     optParser.add_option("-t", "--test", dest="test", default=False, action="store_true",
                          help="send email in test mode (to yourself)")
+    optParser.add_option("--nosend", dest="nosend", default=False,
+                         action="store_true", help="for debugging")
     opts, args = optParser.parse_args()
 
     if len(args) == 0:
