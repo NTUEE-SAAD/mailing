@@ -54,7 +54,7 @@ def connectSMTP(userid, password) -> smtplib.SMTP_SSL:
 def load_account_config():
     '''load account info from account.ini'''
     account_config = ConfigParser()
-    account_config.read("account.ini")
+    account_config.read("account.ini", encoding='utf-8')
     try:
         userid = account_config["ACCOUNT"]["userid"]
         password = account_config["ACCOUNT"]["password"]
