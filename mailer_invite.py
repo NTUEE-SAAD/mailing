@@ -141,7 +141,7 @@ def server_rest(count):
         time.sleep(20)
 
 
-def handle_bounce_backs(retr_n, userid, password):
+def handle_bounce_backs(retr_n, recipients, userid, password):
     '''show help message if emails are bounced back, this usually happens when trying to email a wrong school email address'''
     print("checking for bounce-backs...")
     time.sleep()  # wait for bounce back
@@ -195,7 +195,8 @@ def handle_bounce_backs(retr_n, userid, password):
     if len(bounced_list) > 0:
         print('emails sent to these addresses are bounced back (failed):')
         for address in bounced_list:
-            print(f'\t{address},')
+            if address in recipients:
+                print(f'\t{address},')
         print('Please check these emails.')
     else:
         print('No bounce-backs found, all emails are delivered successfully')
@@ -273,7 +274,7 @@ def main(opts, args):
 
     smtp.quit()
 
-    bounced_n = handle_bounce_backs(sent_n, userid, password)
+    bounced_n = handle_bounce_backs(sent_n, recipients, userid, password)
 
     print(f'{sent_n - bounced_n}/{len(recipients)} mails sent successfully{" in test mode" if opts.test else ""}.')
 
