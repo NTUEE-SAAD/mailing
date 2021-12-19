@@ -144,7 +144,7 @@ def server_rest(count):
 def handle_bounce_backs(retr_n, recipients, userid, password):
     '''show help message if emails are bounced back, this usually happens when trying to email a wrong school email address'''
     print("checking for bounce-backs...")
-    time.sleep()  # wait for bounce back
+    time.sleep(5)  # wait for bounce back
 
     # connect to pop3 server
     pop3 = poplib.POP3_SSL('msa.ntu.edu.tw', 995)
@@ -155,10 +155,11 @@ def handle_bounce_backs(retr_n, recipients, userid, password):
     _, mails, _ = pop3.list()
     emails = [pop3.retr(i)[1]
               for i in range(len(mails), len(mails) - retr_n, -1)]
+    pop3.quit()
 
     email_contents = []
     # Concat message pieces:
-    for i, mssg in enumerate(emails):
+    for mssg in emails:
         # some chinese character may not be able to parse,
         # however, we only care about the bounce back notifications,
         # which are alays in English
