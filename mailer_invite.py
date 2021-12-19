@@ -144,7 +144,7 @@ def server_rest(count):
 def handle_bounce_backs(retr_n, userid, password):
     '''show help message if emails are bounced back, this usually happens when trying to email a wrong school email address'''
     print("checking for bounce-backs...")
-    time.sleep(3)  # wait for bounce back
+    time.sleep()  # wait for bounce back
 
     # connect to pop3 server
     pop3 = poplib.POP3_SSL('msa.ntu.edu.tw', 995)
@@ -153,12 +153,19 @@ def handle_bounce_backs(retr_n, userid, password):
 
     # retrieve last n emails
     _, mails, _ = pop3.list()
-    email_contents = [pop3.retr(i)[1]
-                      for i in range(len(mails), len(mails) - retr_n, -1)]
+    emails = [pop3.retr(i)[1]
+              for i in range(len(mails), len(mails) - retr_n, -1)]
 
+    email_contents = []
     # Concat message pieces:
-    email_contents = [b'\r\n'.join(mssg).decode('utf-8')
-                      for mssg in email_contents]
+    for i, mssg in enumerate(emails):
+        # some chinese character may not be able to parse,
+        # however, we only care about the bounce back notifications,
+        # which are alays in English
+        try:
+            email_contents.append(b'\r\n'.join(mssg).decode('utf-8'))
+        except:
+            continue
 
     # Parse message into an email object:
     email_contents = [EmailParser().parsestr(content, headersonly=True)
@@ -225,7 +232,7 @@ def main(opts, args):
     smtp = connectSMTP(userid, password)
     sent_n = 0
 
-    if not opts.test:
+    if not opts.test and not opts.yes:
         isSure = input(
             f'about send emails to {len(recipients)} recipients, are you sure? [yn]:\n')
         if isSure == 'y' or isSure == 'Y':
@@ -266,7 +273,7 @@ def main(opts, args):
 
     smtp.quit()
 
-    bounced_n = handle_bounce_backs(len(recipients), userid, password)
+    bounced_n = handle_bounce_backs(sent_n, userid, password)
 
     print(f'{sent_n - bounced_n}/{len(recipients)} mails sent successfully{" in test mode" if opts.test else ""}.')
 
@@ -279,6 +286,8 @@ if __name__ == '__main__':
                          help="attach files in 'letters/LETTER/attachments' folder to the email")
     optParser.add_option("-t", "--test", dest="test", default=False, action="store_true",
                          help="send email in test mode (to yourself)")
+    optParser.add_option("-y", "--yes", dest="yes", default=False, action="store_true",
+                         help="同意啦，那次不同意")
     optParser.add_option("--nosend", dest="nosend", default=False,
                          action="store_true", help="for debugging")
     opts, args = optParser.parse_args()
