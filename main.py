@@ -113,9 +113,9 @@ class Main(QMainWindow, editor.Ui_MainWindow):
 
             mkdir(self.letter)
             mkdir(join(self.letter, "attach"))
-            open(join(self.letter, "content.html"), 'w').close()
-            open(join(self.letter, "recipients.csv"), 'w').close()
-            open(join(self.letter, "config.json"), 'w').close()
+            open(join(self.letter, "content.html"), 'w', encoding="utf-8").close()
+            open(join(self.letter, "recipients.csv"), 'w', encoding="utf-8").close()
+            open(join(self.letter, "config.json"), 'w', encoding="utf-8").close()
 
         with open(join(self.letter, "recipients.csv"), 'w', encoding="utf-8") as recipients_file:
             recipients_file.write(self.edit_recipient.toPlainText())
@@ -128,8 +128,8 @@ class Main(QMainWindow, editor.Ui_MainWindow):
                           "lastNameOnly": self.check_last.isChecked()
                       }
                       }
-            # print(json.dumps(config))
-            config_file.write(json.dumps(config))
+            # print(json.dump(config))
+            json.dump(config, config_file, ensure_ascii=False, sort_keys=True, indent=4)
 
         if popup:
             msg = QMessageBox()

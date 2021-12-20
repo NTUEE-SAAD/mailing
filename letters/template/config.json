@@ -1,1 +1,8 @@
-{"subject": "\u4e3b\u65e8", "from": "\u81fa\u5927\u96fb\u6a5f\u7cfb\u5b78\u6703\u5b78\u8853\u90e8", "recipientTitle": {"title": "\u6559\u6388", "lastNameOnly": true}}
+{
+    "from": "臺大電機系學會學術部",
+    "recipientTitle": {
+        "lastNameOnly": true,
+        "title": "教授"
+    },
+    "subject": "主旨"
+}
