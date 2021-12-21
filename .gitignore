@@ -3,3 +3,4 @@ account.ini
 .vscode/
 letters/
 .idea
+*/__pycache
