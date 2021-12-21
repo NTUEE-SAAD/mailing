@@ -5,8 +5,12 @@
 - **Python Interpreter**
   - python 3.X 64bit
 - **Packages**
-  - 不使用 GUI: 套件皆有內建，不需額外安裝
-  - 使用 GUI: 依照 requirement.txt 說明
+  - 不使用 GUI
+    - 套件皆有內建，不需額外安裝
+  - 使用 GUI
+    - 先更新 pip 再安裝 requirements.txt 內的套件
+      - `python -m pip install --upgrade pip`
+      - `pip install -r requirements.txt`
 
 ## Usage
 
