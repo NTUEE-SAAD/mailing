@@ -3,5 +3,5 @@ account.ini
 .vscode/
 letters/
 .idea
-qt/__pycache
-mailer/__pycache
+qt/__pycache__
+mailer/__pycache__
