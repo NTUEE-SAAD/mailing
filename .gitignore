@@ -2,3 +2,6 @@ account.ini
 .DS_Store
 .vscode/
 letters/
+.idea
+qt/__pycache__
+mailer/__pycache__

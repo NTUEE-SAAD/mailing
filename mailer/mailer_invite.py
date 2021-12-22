@@ -51,10 +51,10 @@ def connectSMTP(userid, password) -> smtplib.SMTP_SSL:
     return server
 
 
-def load_account_config():
+def load_account_config(root_path):
     '''load account info from account.ini'''
     account_config = ConfigParser()
-    account_config.read("account.ini", encoding='utf-8')
+    account_config.read(os.path.join(root_path, "account.ini"), encoding='utf-8')
     try:
         userid = account_config["ACCOUNT"]["userid"]
         password = account_config["ACCOUNT"]["password"]
@@ -205,9 +205,9 @@ def handle_bounce_backs(retr_n, recipients, userid, password):
     return len(bounced_list)
 
 
-def main(opts, args):
+def main(opts, args, root_path):
     # choose the receiver list
-    email_root_path = Path(f'letters/{args[0]}')
+    email_root_path = os.path.join(root_path, "letters", args[0])
     email_list_path = os.path.join(email_root_path, Path("recipients.csv"))
     email_config_path = os.path.join(email_root_path, Path("config.json"))
     email_content_path = os.path.join(email_root_path, Path("content.html"))
@@ -218,10 +218,10 @@ def main(opts, args):
         email_config_path)
 
     # load email account info
-    userid, password, sender_name = load_account_config()
+    userid, password, sender_name = load_account_config(root_path)
 
     # load recipient list
-    if opts.test:
+    if opts["test"]:
         recipients = [["王小明", f'{userid}@ntu.edu.tw']]
     else:
         recipients = load_recipient_list(email_list_path)
@@ -234,7 +234,7 @@ def main(opts, args):
     smtp = connectSMTP(userid, password)
     sent_n = 0
 
-    if not opts.test and not opts.yes:
+    if not opts["test"] and not opts["yes"]:
         isSure = input(
             f'about send emails to {len(recipients)} recipients, are you sure? [yn]:\n')
         if isSure == 'y' or isSure == 'Y':
@@ -263,10 +263,10 @@ def main(opts, args):
             email['From'] = formataddr((email_from, f'{userid}@ntu.edu.tw'))
 
         # attach enerything in '/attachments' folder
-        if(opts.attach):
+        if(opts["attach"]):
             attach_files(email, email_attachments_path)
 
-        if opts.nosend:
+        if opts["nosend"]:
             continue
 
         success = send_mail(email, smtp)
@@ -277,25 +277,31 @@ def main(opts, args):
 
     bounced_n = handle_bounce_backs(sent_n, recipients, userid, password)
 
-    print(f'{sent_n - bounced_n}/{len(recipients)} mails sent successfully{" in test mode" if opts.test else ""}.')
+    result = f'{sent_n - bounced_n}/{len(recipients)} mails sent successfully{" in test mode" if opts["test"] else ""}.'
+    print(result)
+    return result
 
 
-if __name__ == '__main__':
-    optParser = OptionParser()
-    optParser.set_usage(
-        "python mailer_invite.py <LETTER>\nLETTER is the name of the folder in the 'letters' folder where your email lives")
-    optParser.add_option("-a", "--attach", dest="attach", default=False, action="store_true",
-                         help="attach files in 'letters/LETTER/attachments' folder to the email")
-    optParser.add_option("-t", "--test", dest="test", default=False, action="store_true",
-                         help="send email in test mode (to yourself)")
-    optParser.add_option("-y", "--yes", dest="yes", default=False, action="store_true",
-                         help="同意啦，那次不同意")
-    optParser.add_option("--nosend", dest="nosend", default=False,
-                         action="store_true", help="for debugging")
-    opts, args = optParser.parse_args()
-
-    if len(args) == 0:
-        print("please specify the letter you want to send")
-        exit()
-
-    main(opts, args)
+# if __name__ == '__main__':
+#     optParser = OptionParser()
+#     optParser.set_usage(
+#         "python mailer_invite.py <LETTER>\nLETTER is the name of the folder in the 'letters' folder where your email lives")
+#     optParser.add_option("-a", "--attach", dest="attach", default=False, action="store_true",
+#                          help="attach files in 'letters/LETTER/attachments' folder to the email")
+#     optParser.add_option("-t", "--test", dest="test", default=False, action="store_true",
+#                          help="send email in test mode (to yourself)")
+#     optParser.add_option("-y", "--yes", dest="yes", default=False, action="store_true",
+#                          help="同意啦，那次不同意")
+#     optParser.add_option("--nosend", dest="nosend", default=False,
+#                          action="store_true", help="for debugging")
+#     opts, args = optParser.parse_args()
+#
+#     if len(args) == 0:
+#         print("please specify the letter you want to send")
+#         exit()
+#
+#     main({"attach": opts.attach,
+#           "test": opts.test,
+#           "yes": opts.yes,
+#           "nosend": opts.nosend},
+#          args, os.path.split(os.path.abspath(__file__))[0])

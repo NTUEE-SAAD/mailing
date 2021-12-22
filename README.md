@@ -2,8 +2,15 @@
 
 ## Requirements
 
-- python 3.X 64bit
-- 套件皆有內建，不需額外安裝
+- **Python Interpreter**
+  - python 3.X 64bit
+- **Packages**
+  - 不使用 GUI
+    - 套件皆有內建，不需額外安裝
+  - 使用 GUI
+    - 先更新 pip 再安裝 requirements.txt 內的套件
+      - `python -m pip install --upgrade pip`
+      - `pip install -r requirements.txt`
 
 ## Usage
 
@@ -26,10 +33,25 @@
 - **account-default.ini的檔名改成account.ini** 裡面放自己的計中帳密
   - **把檔案寄給別人時這個要改掉，不然大家都知道了**
 
-## Run
+## GUI Usage
+<img src="https://i.imgur.com/reuBmUU.jpg" width="100%">
 
-    python mailer_invite.py LETTER
-    python3 mailer_invite.py LETTER
+### Functionality
+
+- **Save** (儲存信件 / User 資訊)
+  - 一般存檔直接按下即可，信件內容與 User 資訊皆會寫入
+  - 若要新建信件，在 letter 欄位指定信件資料夾名稱後再按下
+- **Load** (載入信件)
+  - 若 letter 欄位為空或該信件不存在，會開啟視窗選擇信件資料夾
+  - 若 letter 欄位中的信件正確則會正常載入
+- **Send** (寄出信件)
+  - 按下後會暫時無法操作(我還沒做 multi thread)，請靜待執行完成
+  - 預設為 Test mode 與 No attach
+
+## Run (No GUI)
+
+    python main.py LETTER
+    python3 main.py LETTER
 
 LETTER is the name of the folder in the 'letters' folder where your email lives
 
@@ -39,7 +61,12 @@ LETTER is the name of the folder in the 'letters' folder where your email lives
     -a, --attach  attach files in 'letters/LETTER/attachments' folder to the email
     -t, --test    send email in test mode (to yourself)
 
+## Run (With GUI)
+
+    python main.py
+    python3 main.py
+
 ## Examples
 
-    python3 mailer_invite.py template -t
-    python mailer_invite.py letter1 -a
+    python3 main.py template -t
+    python main.py letter1 -a
