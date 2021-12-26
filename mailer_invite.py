@@ -118,7 +118,7 @@ def attach_files(msg, path):
         msg.attach(attachment)
 
 
-def send_mail(email, server):
+def send_mail(email, server) -> bool:
     try:
         server.sendmail(email["From"], email["To"], email.as_string())
     except:
@@ -142,12 +142,12 @@ def server_rest(count):
         time.sleep(20)
 
 
-def handle_bounce_backs(retr_n, recipients, userid, password):
+def handle_bounce_backs(retr_n, recipients, userid, password) -> int:
     '''show help message if emails are bounced back, this usually happens when trying to email a wrong school email address'''
     # emails before 08 use IMAP instead of POP3
     if int(userid[1:3]) < 9:
         print("Unable to check bouncebacks, this functionality is currently unavailable for users before 08s.")
-        return
+        return 0
 
     print("checking for bounce-backs...")
     time.sleep(5)  # wait for bounce back
