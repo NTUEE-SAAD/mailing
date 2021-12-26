@@ -109,7 +109,8 @@ def load_letter_config(path):
 
 def attach_files(msg, path):
     '''This method will attach all the files in the ./attach folder.'''
-    attachments = os.listdir(path)
+    # filter out dot files such as .DS_Store
+    attachments = filter(lambda a: a[0] != '.', os.listdir(path))
     for a in attachments:
         attachment = MIMEApplication(
             open(os.path.join(path, a), "rb").read(), Name=a)
