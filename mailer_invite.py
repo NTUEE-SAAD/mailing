@@ -144,6 +144,11 @@ def server_rest(count):
 
 def handle_bounce_backs(retr_n, recipients, userid, password):
     '''show help message if emails are bounced back, this usually happens when trying to email a wrong school email address'''
+    # emails before 08 use IMAP instead of POP3
+    if int(userid[1:3]) < 9:
+        print("Unable to check bouncebacks, this functionality is currently unavailable for users before 08s.")
+        return
+
     print("checking for bounce-backs...")
     time.sleep(5)  # wait for bounce back
 
