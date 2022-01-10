@@ -45,7 +45,7 @@ def connectSMTP(userid, password) -> smtplib.SMTP_SSL:
     try:
         server.login(userid, password)
     except:
-        print('error: login failed, please check your acount.ini file')
+        print('error: login failed, please check your account.ini file')
 
     print("SMTP Connected!")
     return server
