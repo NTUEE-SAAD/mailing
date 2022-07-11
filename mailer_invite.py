@@ -88,6 +88,10 @@ def handle_recipient_title(recipients, recipTitle, lastNameOnly):
 
 
 def load_letter_config(path):
+    if not os.path.isfile(path):
+        print(f'error: failed to load letter config at {path}, please enter a valid letter name')
+        exit()
+
     with open(path, encoding='utf-8') as f:
         letter_config = json.load(f)
 
