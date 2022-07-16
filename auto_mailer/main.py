@@ -1,5 +1,5 @@
 ##########################################################################
-# File:         send_mail.py                                             #
+# File:         main.py                                                  #
 # Purpose:      Automatically send batch of mails                        #
 # Last changed: 2022/07/16                                               #
 # Author:       zhuang-jia-xu                                            #
@@ -19,7 +19,7 @@ from .utils import *
 from .AutoMailer import AutoMailer
 from .Letter import Letter
 
-
+APP_NAME = "auto-mailer"
 app = typer.Typer()
 
 
@@ -30,10 +30,10 @@ def send(
         False, "--test", "-t", help="Test mode: send mail to yourself"
     ),
     config_path: str = typer.Option(
-        "config.ini",
+        "config.conf",
         "--config",
         "-c",
-        help="Path to config.ini",
+        help="Path to config.conf",
         exists=True,
         dir_okay=False,
     ),
@@ -105,15 +105,15 @@ def create(letter_name: Optional[str] = typer.Argument(..., help="Name of letter
 @app.command()
 def check(
     letter_path: str = typer.Argument(
-        ..., help="Path to config.ini", exists=True, dir_okay=False,
+        ..., help="Path to config.conf", exists=True, dir_okay=False,
     ),
 ):
     """
     check wether a directory is a valid letter, a letter folder should be structured as follows:\n
     letter\n
     ├── attachments\n
-    │   ├── ...\n
-    │   └── ...\n
+    │   ├── ...\n
+    │   └── ...\n
     ├── config.yml\n
     ├── content.html\n
     └── recipients.csv\n
@@ -124,6 +124,55 @@ def check(
         richSuccess("Letter is valid")
     else:
         richError("Letter is invalid")
+
+
+# TODO
+@app.command()
+def config(
+    new_config_path: Optional[str] = typer.Option(
+        None,
+        "--file",
+        "-f",
+        help="Path to new config file whose content will be copied to config.conf",
+        exists=True,
+        dir_okay=False,
+    ),
+):
+    """
+    configure the auto mailer, a valid config file should have the following structure:\n
+    [smtp]\n
+    host=smtps.ntu.edu.tw\n
+    port=465\n
+    timeout=5\n
+    [pop3]\n
+    host=msa.ntu.edu.tw\n
+    port=995\n
+    timeout=5\n
+    [account]\n
+    userid=b09901000\n
+    password=123456789\n
+    name=John Doe\n
+    """
+    raise NotImplementedError
+    typer.echo("Creating a new config.conf file")
+    if Path("config.conf").exists():
+        richError("config.conf already exists")
+        return
+    with open("config.conf", "w") as f:
+        f.write(
+            "[smtp]\n\
+            host=smtps.ntu.edu.tw\n\
+            port=465\n\
+            timeout=5\n\
+            [pop3]\n\
+            host=msa.ntu.edu.tw\n\
+            port=995\ntimeout=5\n\
+            [account]\n\
+            userid=\n\
+            password=\n\
+            name=\n"
+        )
+    richSuccess("config.conf created")
 
 
 if __name__ == "__main__":
