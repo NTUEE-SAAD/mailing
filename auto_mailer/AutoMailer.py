@@ -289,7 +289,7 @@ class AutoMailer:
             except:
                 logging.critical("Failed to login to SMTP server")
                 richError(
-                    "SMTP login failed, please check your account info in config.conf"
+                    "SMTP login failed, please check your account info in config.ini"
                 )
 
         logging.info("Connected to SMTP server")
@@ -299,7 +299,7 @@ class AutoMailer:
 
     @classmethod
     def load_mailer_config(cls, config_path: str) -> dict:
-        """load auto mailer configuration from config.conf"""
+        """load auto mailer configuration from config.ini"""
         config_path = Path(config_path)
         automailer_config = ConfigParser()
         if not os.path.exists(config_path):
@@ -335,7 +335,7 @@ class AutoMailer:
 
 
 if __name__ == "__main__":
-    auto_mailer_config = AutoMailer.load_mailer_config("config.conf")
+    auto_mailer_config = AutoMailer.load_mailer_config("config.ini")
     auto_mailer = AutoMailer(auto_mailer_config)
     emails = Letter(
         "letters/test",

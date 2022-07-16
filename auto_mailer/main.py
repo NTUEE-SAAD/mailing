@@ -30,10 +30,10 @@ def send(
         False, "--test", "-t", help="Test mode: send mail to yourself"
     ),
     config_path: str = typer.Option(
-        "config.conf",
+        "config.ini",
         "--config",
         "-c",
-        help="Path to config.conf",
+        help="Path to config.ini",
         exists=True,
         dir_okay=False,
     ),
@@ -105,7 +105,7 @@ def create(letter_name: Optional[str] = typer.Argument(..., help="Name of letter
 @app.command()
 def check(
     letter_path: str = typer.Argument(
-        ..., help="Path to config.conf", exists=True, dir_okay=False,
+        ..., help="Path to config.ini", exists=True, dir_okay=False,
     ),
 ):
     """
@@ -133,7 +133,7 @@ def config(
         None,
         "--file",
         "-f",
-        help="Path to new config file whose content will be copied to config.conf",
+        help="Path to new config file whose content will be copied to config.ini",
         exists=True,
         dir_okay=False,
     ),
@@ -154,11 +154,11 @@ def config(
     name=John Doe\n
     """
     raise NotImplementedError
-    typer.echo("Creating a new config.conf file")
-    if Path("config.conf").exists():
-        richError("config.conf already exists")
+    typer.echo("Creating a new config.ini file")
+    if Path("config.ini").exists():
+        richError("config.ini already exists")
         return
-    with open("config.conf", "w") as f:
+    with open("config.ini", "w") as f:
         f.write(
             "[smtp]\n\
             host=smtps.ntu.edu.tw\n\
@@ -172,7 +172,7 @@ def config(
             password=\n\
             name=\n"
         )
-    richSuccess("config.conf created")
+    richSuccess("config.ini created")
 
 
 if __name__ == "__main__":
