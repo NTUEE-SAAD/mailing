@@ -1,0 +1,38 @@
+2022/07/17 06:02:00 AM INFO: Connected to SMTP server
+2022/07/17 06:02:02 AM INFO: User cancelled on checking content
+2022/07/17 06:04:40 AM INFO: Connected to SMTP server
+2022/07/17 06:04:42 AM INFO: User cancelled on checking content
+2022/07/17 06:05:34 AM INFO: Connected to SMTP server
+2022/07/17 06:05:36 AM INFO: User cancelled on checking content
+2022/07/17 06:09:40 AM INFO: Connected to SMTP server
+2022/07/17 06:09:41 AM INFO: User cancelled on checking content
+2022/07/17 06:16:12 AM INFO: Connected to SMTP server
+2022/07/17 06:16:15 AM INFO: User cancelled on checking content
+2022/07/17 06:16:53 AM INFO: Connected to SMTP server
+2022/07/17 06:16:56 AM INFO: User cancelled on checking content
+2022/07/17 06:17:04 AM INFO: Connected to SMTP server
+2022/07/17 06:17:08 AM INFO: User cancelled on checking content
+2022/07/17 06:18:36 AM INFO: Connected to SMTP server
+2022/07/17 06:18:37 AM INFO: User cancelled on checking content
+2022/07/17 06:18:43 AM INFO: Connected to SMTP server
+2022/07/17 06:18:49 AM INFO: User cancelled on checking content
+2022/07/17 06:19:01 AM INFO: Connected to SMTP server
+2022/07/17 06:19:59 AM INFO: Connected to SMTP server
+2022/07/17 06:20:32 AM INFO: Connected to SMTP server
+2022/07/17 06:20:56 AM INFO: User cancelled on checking content
+2022/07/17 06:21:23 AM INFO: Connected to SMTP server
+2022/07/17 06:21:31 AM INFO: User cancelled on checking content
+2022/07/17 06:21:54 AM INFO: Connected to SMTP server
+2022/07/17 06:21:59 AM INFO: Connected to SMTP server
+2022/07/17 06:22:03 AM INFO: User cancelled on checking content
+2022/07/17 06:23:24 AM INFO: Connected to SMTP server
+2022/07/17 06:29:53 AM INFO: Connected to SMTP server
+2022/07/17 06:29:59 AM INFO: User cancelled on checking content
+2022/07/17 06:31:10 AM INFO: Connected to SMTP server
+2022/07/17 06:31:18 AM INFO: User cancelled on checking content
+2022/07/17 06:32:05 AM INFO: Connected to SMTP server
+2022/07/17 06:32:11 AM INFO: User cancelled on checking content
+2022/07/17 06:32:22 AM INFO: Connected to SMTP server
+2022/07/17 06:32:28 AM INFO: User cancelled on checking content
+2022/07/17 06:33:15 AM INFO: Connected to SMTP server
+2022/07/17 06:33:37 AM INFO: User cancelled on sending emails
