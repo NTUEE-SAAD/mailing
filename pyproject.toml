@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "auto-mailer"
+name = "ntuee-mailer"
 version = "2.0.0"
 description = "an auto mailer to send emails in batch for you"
 authors = ["zhuang-jia-xu <76544194+zhuang-jia-xu@users.noreply.github.com>"]
@@ -8,7 +8,7 @@ readme = "README.md"
 repository = "https://github.com/NTUEE-SAAD/mailing"
 
 [tool.poetry.scripts]
-auto-mailer = "auto_mailer.main:app"
+ntuee-mailer = "ntuee_mailer.main:app"
 
 [tool.poetry.dependencies]
 python = "^3.7"
