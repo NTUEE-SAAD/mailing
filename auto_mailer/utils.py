@@ -8,10 +8,8 @@
 ##########################################################################
 import typer
 from rich import print
-from rich.progress import (
-    Progress,
-    TextColumn,
-)
+from rich.progress import Progress, TextColumn
+from rich.prompt import Prompt, Confirm
 from cerberus.errors import ValidationError, ErrorList
 
 import logging
@@ -129,7 +127,7 @@ def typerSelect(message: str, options: list) -> str:
 def typerConfirm(message: str, countdown: int = 0) -> bool:
     prompt_message = f"\n{message}"
     if countdown == 0:
-        result = typer.confirm(prompt_message, default=False)
+        result = Confirm.ask(prompt_message, default=False)
     else:
         with Progress(
             TextColumn("[bold blue]{task.description}"), transient=True
@@ -142,7 +140,7 @@ def typerConfirm(message: str, countdown: int = 0) -> bool:
                     description=f' {countdown - i}{" ." * (countdown - i)}',
                 )
                 time.sleep(1)
-        result = typer.confirm(prompt_message, default=False)
+        result = Confirm.ask(prompt_message, default=False)
     print()
     return result
 

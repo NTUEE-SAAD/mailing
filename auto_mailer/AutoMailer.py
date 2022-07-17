@@ -14,6 +14,7 @@ from rich.progress import (
     TimeRemainingColumn,
     BarColumn,
 )
+from rich.prompt import Prompt
 from cerberus import Validator
 
 import time
@@ -29,17 +30,16 @@ import poplib
 from email.parser import Parser as EmailParser
 
 from .utils import *
+from .globals import *
 from .Letter import Letter
+
+__all__ = ["AutoMailer"]
 
 auto_mailer_config_schema = {
     "account": {
         "type": "dict",
         "require_all": True,
-        "schema": {
-            "userid": {"type": "string"},
-            "password": {"type": "string"},
-            "name": {"type": "string"},
-        },
+        "schema": {"name": {"type": "string"},},
     },
     "smtp": {
         "require_all": True,
@@ -69,19 +69,38 @@ class AutoMailer:
     verbose: bool = True
     SMTPserver: smtplib.SMTP_SSL = None
     config: dict = None
-    count: int = 0
+    total_count: int = 0
     success_count: int = 0
     email_addrs: List[str] = []
 
     def __init__(self, config: dict = None, quiet: bool = False) -> None:
         self.config = config
         self.verbose = not quiet
+        self.SMTPserver = self.__createSMTPServer()
 
-    def connect(self) -> None:
-        """connect to SMTP server"""
-        self.SMTPserver = self.__createSMTPServer(
-            self.config["account"]["userid"], self.config["account"]["password"]
-        )
+    def login(self) -> None:
+        """login to SMTP server"""
+        for i in range(3):
+            try:
+                self.SMTPserver.login(*self.__get_login_info())
+            except:
+                logging.info(f"Login failed {i+1} times")
+                richError("\nLogin failed, please try again", prefix="", terminate=False)
+                time.sleep(1)
+                continue
+            return
+
+        richError("Too many failed login attempts", prefix="")
+
+    def __get_login_info(self) -> dict:
+        """get login info"""
+        print("\n[blue]\[User login]")
+        userid = Prompt.ask("[blue]Username[/blue] (e.g. b09901000)", )
+        self.config["account"]["userid"] = userid
+        password = Prompt.ask("[blue]password", password=True)
+        self.config["account"]["password"] = password
+        print("\n[bold")
+        return userid, password
 
     def send_emails(self, letter: Letter, test: bool = False) -> None:
         """send emails"""
@@ -111,6 +130,8 @@ class AutoMailer:
 
         self.email_addrs += letter.email_addrs
 
+        letter.set_from_addr(complete_school_email(self.config["account"]["userid"]))
+
         progress = Progress(
             TextColumn("[bold blue]{task.description}", justify="right"),
             BarColumn(bar_width=None),
@@ -128,7 +149,6 @@ class AutoMailer:
                     )
                 success = self.send_email(email)
                 if success:
-                    self.success_count += 1
                     if self.verbose:
                         progress.print(
                             f"[green]successfully sent email to {email['To']}"
@@ -142,7 +162,7 @@ class AutoMailer:
         if self.SMTPserver is None:
             richError("SMTP server is not connected, please connect first")
 
-        self.count += 1
+        self.total_count += 1
 
         toaddrs = email["To"].split(",")
         ccaddrs = email["Cc"].split(",") if email["Cc"] is not None else []
@@ -159,10 +179,15 @@ class AutoMailer:
 
         logging.info(f"Sent email {toaddrs}")
 
+        self.success_count += 1
         return True
 
     def check_bounce_backs(self) -> None:
         """show help message if emails are bounced back, this usually happens when trying to email a wrong school email address"""
+        if self.total_count == 0:
+            print("No emails were sent, nothing to check")
+            return
+
         logging.info("Checking bounce backs")
         progress = Progress(
             SpinnerColumn(), TextColumn("[progress.description]{task.description}"),
@@ -240,24 +265,22 @@ class AutoMailer:
                     "[green]No bounce-backs found, all emails are delivered successfully",
                 )
 
-        richSuccess(
-            f"{self.success_count}/{len(self.email_addrs)} emails sent successfully"
-        )
+        self.success_count -= len(bounced_list)
 
     def __server_rest(self):
         """for bypassing email server limitation"""
 
-        if self.count % 10 == 0 and self.count > 0:
+        if self.total_count % 10 == 0 and self.total_count > 0:
             print("resting...")
             time.sleep(10)
-        if self.count % 130 == 0 and self.count > 0:
+        if self.total_count % 130 == 0 and self.total_count > 0:
             print("resting...")
             time.sleep(20)
-        if self.count % 260 == 0 and self.count > 0:
+        if self.total_count % 260 == 0 and self.total_count > 0:
             print("resting...")
             time.sleep(20)
 
-    def __createSMTPServer(self, userid, password) -> smtplib.SMTP_SSL:
+    def __createSMTPServer(self) -> smtplib.SMTP_SSL:
         """create SMTP server"""
 
         with Progress(
@@ -278,19 +301,13 @@ class AutoMailer:
             except Exception as e:
                 logging.critical(e)
                 logging.critical("Failed to connect to SMTP server")
-                richError("Failed to connect to SMTP server")
+                progress.print("[red]Failed to connect to SMTP server")
+                exit(1)
 
             if server.has_extn("STARTTLS"):
                 server.starttls()
-            server.ehlo()
 
-            try:
-                server.login(userid, password)
-            except:
-                logging.critical("Failed to login to SMTP server")
-                richError(
-                    "SMTP login failed, please check your account info in config.ini"
-                )
+            server.ehlo_or_helo_if_needed()
 
         logging.info("Connected to SMTP server")
         richSuccess("SMTP server connected")
@@ -319,19 +336,23 @@ class AutoMailer:
 
             config[section] = temp_dict
 
-        if v.validate(config):
+        if cls.validate_config(config):
             return v.document.copy()
         else:
             logging.critical(
                 f"mailer config validation failed, please check {config_path}"
             )
             logging.critical(config)
-            richError(
-                f"mailer config validation failed, please check {config_path}",
-                terminate=False,
-            )
+            richError(f"mailer config validation failed, please check {config_path}",)
+
+    @classmethod
+    def validate_config(cls, config: dict) -> bool:
+        """validate config"""
+        if v.validate(config):
+            return True
+        else:
             parse_validation_error(v._errors)
-            exit(1)
+            return False
 
 
 if __name__ == "__main__":

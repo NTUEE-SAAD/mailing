@@ -8,18 +8,20 @@
 ##########################################################################
 import typer
 from rich import print
+from rich.prompt import Confirm, Prompt
 
 import os
 import logging
 import shutil
 from pathlib import Path
 from typing import Optional
+from configparser import ConfigParser
 
 from .utils import *
 from .AutoMailer import AutoMailer
 from .Letter import Letter
+from .globals import *
 
-APP_NAME = "auto-mailer"
 app = typer.Typer()
 
 
@@ -30,7 +32,7 @@ def send(
         False, "--test", "-t", help="Test mode: send mail to yourself"
     ),
     config_path: str = typer.Option(
-        "config.ini",
+        CONFIG_PATH,
         "--config",
         "-c",
         help="Path to config.ini",
@@ -43,6 +45,9 @@ def send(
     ),
 ):
     """send emails to a list of recipients as configured in your letter"""
+    if not CONFIG_PATH.is_file():
+        print("Config file not found, generating a new one...")
+        shutil.copy("config-default.ini", CONFIG_PATH)
 
     if letter_path is None:
         letter_names = list(
@@ -72,27 +77,26 @@ def send(
 
     auto_mailer_config = AutoMailer.load_mailer_config(config_path)
     auto_mailer = AutoMailer(auto_mailer_config, quiet=quiet)
-    emails = Letter(
-        letter_path,
-        auto_mailer_config["account"]["name"],
-        complete_school_email(auto_mailer_config["account"]["userid"]),
-    )
-    auto_mailer.connect()
+    emails = Letter(letter_path, auto_mailer_config["account"]["name"],)
+    auto_mailer.login()
     auto_mailer.send_emails(emails, test=test)
     auto_mailer.check_bounce_backs()
+    richSuccess(
+        f"{auto_mailer.success_count} / {auto_mailer.total_count} emails sent successfully"
+    )
 
 
 @app.command()
 def create(letter_name: Optional[str] = typer.Argument(..., help="Name of letter")):
     """create a new letter from template"""
-    typer.echo("Creating a new letter")
+    print("Creating a new letter")
 
     TEMPLATE_PATH = "template_letter"
     if not Letter.check_letter(TEMPLATE_PATH):
         richError("Can't find template letter")
         return
     if letter_name is None:
-        letter_name = typer.prompt("Please enter the letter name")
+        letter_name = Prompt.ask("Please enter the letter name")
     try:
         shutil.copytree(TEMPLATE_PATH, Path(os.getcwd()) / letter_name)
     except FileExistsError:
@@ -105,11 +109,12 @@ def create(letter_name: Optional[str] = typer.Argument(..., help="Name of letter
 @app.command()
 def check(
     letter_path: str = typer.Argument(
-        ..., help="Path to config.ini", exists=True, dir_okay=False,
+        ..., help="Path to letter directory", exists=True, dir_okay=False,
     ),
 ):
     """
-    check wether a directory is a valid letter, a letter folder should be structured as follows:\n
+    check wether a directory is a valid letter\n
+    a letter folder should be structured as follows:\n
     letter\n
     ├── attachments\n
     │   ├── ...\n
@@ -119,14 +124,13 @@ def check(
     └── recipients.csv\n
     """
 
-    typer.echo("Checking letter")
-    if Letter.check_letter(letter_path):
+    print("Checking letter")
+    if Letter.check_letter(letter_path, verbose=True):
         richSuccess("Letter is valid")
     else:
         richError("Letter is invalid")
 
 
-# TODO
 @app.command()
 def config(
     new_config_path: Optional[str] = typer.Option(
@@ -137,9 +141,14 @@ def config(
         exists=True,
         dir_okay=False,
     ),
+    reset: bool = typer.Option(
+        False, "--reset", "-r", help="Reset config.ini to default"
+    ),
+    show: Optional[bool] = typer.Option(False, "--show", "-s", help="Show config.ini"),
 ):
     """
-    configure the auto mailer, a valid config file should have the following structure:\n
+    configure the auto mailer\n
+    a valid config file should have the following structure:\n
     [smtp]\n
     host=smtps.ntu.edu.tw\n
     port=465\n
@@ -149,30 +158,58 @@ def config(
     port=995\n
     timeout=5\n
     [account]\n
-    userid=b09901000\n
-    password=123456789\n
     name=John Doe\n
     """
-    raise NotImplementedError
-    typer.echo("Creating a new config.ini file")
-    if Path("config.ini").exists():
-        richError("config.ini already exists")
+
+    if show:
+        typer.echo(Path(CONFIG_PATH).read_text())
         return
-    with open("config.ini", "w") as f:
-        f.write(
-            "[smtp]\n\
-            host=smtps.ntu.edu.tw\n\
-            port=465\n\
-            timeout=5\n\
-            [pop3]\n\
-            host=msa.ntu.edu.tw\n\
-            port=995\ntimeout=5\n\
-            [account]\n\
-            userid=\n\
-            password=\n\
-            name=\n"
-        )
-    richSuccess("config.ini created")
+
+    if reset:
+        shutil.copy("config-default.ini", CONFIG_PATH)
+        richSuccess("Config file reset to default")
+        return
+
+    APP_DIR.mkdir(parents=True, exist_ok=True)
+
+    if new_config_path is not None:
+        if not AutoMailer.validate_config(CONFIG_PATH):
+            richError("Invalid config file")
+            exit(1)
+
+        shutil.copy(new_config_path, CONFIG_PATH)
+        richSuccess(f"Config file copied to {CONFIG_PATH}")
+        return
+
+    if not CONFIG_PATH.is_file():
+        print(f"Can't find config file at {APP_DIR}")
+        shutil.copy("config-default.ini", CONFIG_PATH)
+        richSuccess("config.ini created")
+
+    config = AutoMailer.load_mailer_config(CONFIG_PATH)
+
+    for section, vals in config.items():
+        for key, value in vals.items():
+            print(f"\n{section}.{key} = {value}")
+            if Confirm.ask(
+                f"Do you want to modify [blue]{section}.{key}[/blue]?", default=False
+            ):
+                new_value = Prompt.ask(
+                    f"Enter new value for [blue]{section}.{key}",
+                    password=key == "password",
+                )
+                config[section][key] = new_value
+                richSuccess(f"{section}.{key} updated")
+
+    new_config_parser = ConfigParser()
+
+    for section, vals in config.items():
+        new_config_parser[section] = vals
+
+    with open(CONFIG_PATH, "w") as f:
+        new_config_parser.write(f)
+
+    richSuccess(f"Config file updated to {CONFIG_PATH}")
 
 
 if __name__ == "__main__":
