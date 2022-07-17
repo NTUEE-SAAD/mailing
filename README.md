@@ -1,45 +1,133 @@
-# 學術部寄信程式
+# `ntuee-mailer`
 
-## Requirements
+**Usage**:
 
-- python 3.X 64bit
-- 套件皆有內建，不需額外安裝
+```console
+$ ntuee-mailer [OPTIONS] COMMAND [ARGS]...
+```
 
-## Usage
+**Options**:
 
-- **請不要把信件內容push上來**，負責人可以寫完信之後zip好傳給其他人
-- 請複製 letters 資料夾中的 template 來創建新的信件
-- content.html 放信件內文
-  - **記得在內文中加入$recipient**，此處會被替換成收件人，及其稱謂
-- recipients.csv 收件人及信箱名單
-  - 可以用 excel 編輯 csv 檔案，格式詳見 template
-  - **第一欄填收件人姓名，第二欄填收件人信箱**
-  - 如果是臺大的信箱，可以不用填 '@ntu.edu.tw'，會自動加上去
-- config.json 裡面可以修改信件設定
-  - subject 為主旨
-  - from 為寄件人名稱顯示，如果 from 留空白會顯示你原本的名稱
-  - recipientTitle 裡面的 Title 不是空字串則會把這個 title 接到收件人姓名後面
-  - lastNameOnly 如果是 true，使用「姓氏+稱謂」，反之則使用「全名+稱謂」
-- attachments 資料夾裡放要附加的檔案
-  - 執行時使用-a 選項來附加，預設不附加檔案，下面有範例
-  - 如果你很在乎順序的話，取檔名的時候記得要確認順序
-- **account-default.ini的檔名改成account.ini** 裡面放自己的計中帳密
-  - **把檔案寄給別人時這個要改掉，不然大家都知道了**
+* `--install-completion`: Install completion for the current shell.
+* `--show-completion`: Show completion for the current shell, to copy it or customize the installation.
+* `--help`: Show this message and exit.
 
-## Run
+**Commands**:
 
-    python mailer_invite.py LETTER
-    python3 mailer_invite.py LETTER
+* `check`: check wether a directory is a valid letter a...
+* `config`: configure the auto mailer a valid config file...
+* `create`: create a new letter from template
+* `send`: send emails to a list of recipients as...
 
-LETTER is the name of the folder in the 'letters' folder where your email lives
+## `ntuee-mailer check`
 
-### Options
+check wether a directory is a valid letter
 
-    -h, --help    show help message and exit
-    -a, --attach  attach files in 'letters/LETTER/attachments' folder to the email
-    -t, --test    send email in test mode (to yourself)
+a letter folder should be structured as follows:
 
-## Examples
+letter
 
-    python3 mailer_invite.py template -t
-    python mailer_invite.py letter1 -a
+├── attachments
+
+│   ├── ...
+
+│   └── ...
+
+├── config.yml
+
+├── content.html
+
+└── recipients.csv
+
+**Usage**:
+
+```console
+$ ntuee-mailer check [OPTIONS] LETTER_PATH
+```
+
+**Arguments**:
+
+* `LETTER_PATH`: Path to letter directory  [required]
+
+**Options**:
+
+* `--help`: Show this message and exit.
+
+## `ntuee-mailer config`
+
+configure the auto mailer
+
+a valid config file should have the following structure:
+
+[smtp]
+
+host=smtps.ntu.edu.tw
+
+port=465
+
+timeout=5
+
+[pop3]
+
+host=msa.ntu.edu.tw
+
+port=995
+
+timeout=5
+
+[account]
+
+name=John Doe
+
+**Usage**:
+
+```console
+$ ntuee-mailer config [OPTIONS]
+```
+
+**Options**:
+
+* `-f, --file TEXT`: Path to new config file whose content will be copied to config.ini
+* `-r, --reset`: Reset config.ini to default  [default: False]
+* `-s, --show`: Show config.ini  [default: False]
+* `--help`: Show this message and exit.
+
+## `ntuee-mailer create`
+
+create a new letter from template
+
+**Usage**:
+
+```console
+$ ntuee-mailer create [OPTIONS] LETTER_NAME
+```
+
+**Arguments**:
+
+* `LETTER_NAME`: Name of letter  [required]
+
+**Options**:
+
+* `--help`: Show this message and exit.
+
+## `ntuee-mailer send`
+
+send emails to a list of recipients as configured in your letter
+
+**Usage**:
+
+```console
+$ ntuee-mailer send [OPTIONS] [LETTER_PATH]
+```
+
+**Arguments**:
+
+* `[LETTER_PATH]`: Path to letter
+
+**Options**:
+
+* `-t, --test`: Test mode: send mail to yourself  [default: False]
+* `-c, --config FILE`: Path to config.ini  [default: /home/madmax/.config/ntuee_mailer-mailer/config.ini]
+* `-q, --quiet`: Quiet mode: less output  [default: False]
+* `-d, --debug INTEGER RANGE`: Debug level  [default: 0]
+* `--help`: Show this message and exit.
