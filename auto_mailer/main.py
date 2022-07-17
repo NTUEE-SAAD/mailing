@@ -27,11 +27,13 @@ app = typer.Typer()
 
 @app.command()
 def send(
-    letter_path: Optional[str] = typer.Argument(None, help="Path to letter"),
+    letter_path: Optional[Path] = typer.Argument(
+        None, help="Path to letter", exists=True, file_okay=False
+    ),
     test: bool = typer.Option(
         False, "--test", "-t", help="Test mode: send mail to yourself"
     ),
-    config_path: str = typer.Option(
+    config_path: Path = typer.Option(
         CONFIG_PATH,
         "--config",
         "-c",
@@ -108,8 +110,8 @@ def create(letter_name: Optional[str] = typer.Argument(..., help="Name of letter
 
 @app.command()
 def check(
-    letter_path: str = typer.Argument(
-        ..., help="Path to letter directory", exists=True, dir_okay=False,
+    letter_path: Path = typer.Argument(
+        ..., help="Path to letter directory", exists=True, file_okay=False,
     ),
 ):
     """
